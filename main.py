@@ -1,13 +1,15 @@
 import os
 from yt_dlp import YoutubeDL
+import sys
 
-def download_video(video_url, output_folder="downloads"):
+def download_video(video_url, output_folder="downloads", verbose=False):
     """
-    Downloads a YouTube video using yt-dlp.
+    Downloads a YouTube video using yt-dlp and forces MP4 output.
 
     Args:
         video_url (str): The URL of the YouTube video to download.
         output_folder (str): Folder to save the downloaded video.
+        verbose (bool): Enable verbose output for debugging.
 
     Returns:
         str: Path to the downloaded video file.
@@ -15,41 +17,51 @@ def download_video(video_url, output_folder="downloads"):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # yt-dlp options for downloading
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',  # Highest quality video and audio
-        'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),  # Save path and naming pattern
-        'merge_output_format': 'mp4',  # Ensure output is in mp4 format
+        # Force MP4 output
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'merge_output_format': 'mp4',  # Force merging into MP4
+        'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),
         'postprocessors': [{
-            'key': 'FFmpegMerger',  # Merge video and audio
-        }]
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',  # Ensure final format is MP4
+        }],
+        'verbose': verbose,
+        'nocheckcertificate': True,
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     }
 
     try:
         with YoutubeDL(ydl_opts) as ydl:
+            print("Downloading video (forcing MP4 format)...")
             info = ydl.extract_info(video_url, download=True)
-            video_title = info.get('title', 'Unknown')
-            video_file = os.path.join(output_folder, f"{video_title}.mp4")
-            print(f"Downloaded: {video_file}")
-            return video_file
+            if info:
+                video_title = info.get('title', 'Unknown')
+                video_file = os.path.join(output_folder, f"{video_title}.mp4")
+                print(f"Successfully downloaded: {video_file}")
+                return video_file
+
     except Exception as e:
-        print(f"Error downloading video: {e}")
+        print(f"Error downloading video: {str(e)}")
+        if verbose:
+            import traceback
+            print("Full error traceback:")
+            traceback.print_exc()
         return None
 
 if __name__ == "__main__":
     print("YouTube Video Downloader")
     print("========================")
 
-    # Get video URL input
+    verbose_mode = "--verbose" in sys.argv or "-v" in sys.argv
     video_url = input("Enter the YouTube video URL: ").strip()
 
     if video_url:
-        print("Downloading video...")
-        downloaded_file = download_video(video_url)
-
-        if downloaded_file:
-            print(f"Video successfully downloaded to: {downloaded_file}")
-        else:
-            print("Failed to download the video.")
+        downloaded_file = download_video(video_url, verbose=verbose_mode)
+        if not downloaded_file:
+            print("\nTroubleshooting steps:")
+            print("1. Make sure ffmpeg is installed on your system")
+            print("2. Try updating yt-dlp: yt-dlp -U")
+            print("3. Check if the video is accessible in your browser")
     else:
         print("No URL provided. Exiting.")
