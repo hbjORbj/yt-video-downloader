@@ -1,8 +1,9 @@
 import os
 from yt_dlp import YoutubeDL
-import sys
+import argparse
+from typing import List
 
-def download_video(video_url, output_folder="downloads", verbose=False):
+def download_video(video_url: str, output_folder="downloads", verbose=False) -> str:
     """
     Downloads a YouTube video using yt-dlp and forces MP4 output.
     Filename format: title_YYYY_MM_DD.mp4
@@ -19,13 +20,12 @@ def download_video(video_url, output_folder="downloads", verbose=False):
         os.makedirs(output_folder)
 
     ydl_opts = {
-        # Force MP4 output
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'merge_output_format': 'mp4',  # Force merging into MP4
+        'merge_output_format': 'mp4',
         'outtmpl': os.path.join(output_folder, '%(title)s_%(upload_date>%Y_%m_%d)s.%(ext)s'),
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',  # Ensure final format is MP4
+            'preferedformat': 'mp4',
         }],
         'verbose': verbose,
         'nocheckcertificate': True,
@@ -34,13 +34,12 @@ def download_video(video_url, output_folder="downloads", verbose=False):
 
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print("Downloading video (forcing MP4 format)...")
+            print(f"\nDownloading video: {video_url}")
             info = ydl.extract_info(video_url, download=True)
             if info:
                 video_title = info.get('title', 'Unknown')
                 upload_date = info.get('upload_date', '')
                 if upload_date:
-                    # Format: title_YYYY_MM_DD.mp4
                     formatted_date = f"{upload_date[:4]}_{upload_date[4:6]}_{upload_date[6:8]}"
                     video_file = os.path.join(output_folder, f"{video_title}_{formatted_date}.mp4")
                 else:
@@ -56,19 +55,71 @@ def download_video(video_url, output_folder="downloads", verbose=False):
             traceback.print_exc()
         return None
 
+def process_download_queue(urls: List[str], output_folder="downloads", verbose=False) -> List[str]:
+    """
+    Process a queue of video URLs and download them sequentially.
+
+    Args:
+        urls (List[str]): List of YouTube video URLs to download.
+        output_folder (str): Folder to save the downloaded videos.
+        verbose (bool): Enable verbose output for debugging.
+
+    Returns:
+        List[str]: List of paths to successfully downloaded video files.
+    """
+    successful_downloads = []
+    failed_downloads = []
+
+    print(f"\nProcessing download queue: {len(urls)} videos")
+    for i, url in enumerate(urls, 1):
+        print(f"\nProcessing video {i}/{len(urls)}")
+        result = download_video(url.strip(), output_folder, verbose)
+        if result:
+            successful_downloads.append(result)
+        else:
+            failed_downloads.append(url)
+
+    # Print summary
+    print("\nDownload Queue Summary")
+    print("=====================")
+    print(f"Total videos: {len(urls)}")
+    print(f"Successfully downloaded: {len(successful_downloads)}")
+    print(f"Failed downloads: {len(failed_downloads)}")
+    
+    if failed_downloads:
+        print("\nFailed URLs:")
+        for url in failed_downloads:
+            print(f"- {url}")
+
+    return successful_downloads
+
+def get_urls_from_input() -> List[str]:
+    """Get multiple URLs from user input."""
+    print("Enter YouTube URLs (one per line)")
+    print("Press Enter twice when done:")
+    
+    urls = []
+    while True:
+        url = input().strip()
+        if not url:
+            break
+        urls.append(url)
+    return urls
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="YouTube Video Downloader with Queue Support")
+    parser.add_argument("-u", "--urls", nargs="+", help="YouTube video URLs to download")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("-o", "--output", default="downloads", help="Output folder path")
+    args = parser.parse_args()
+
     print("YouTube Video Downloader")
     print("========================")
 
-    verbose_mode = "--verbose" in sys.argv or "-v" in sys.argv
-    video_url = input("Enter the YouTube video URL: ").strip()
+    # Get URLs either from command line arguments or user input
+    urls_to_process = args.urls if args.urls else get_urls_from_input()
 
-    if video_url:
-        downloaded_file = download_video(video_url, verbose=verbose_mode)
-        if not downloaded_file:
-            print("\nTroubleshooting steps:")
-            print("1. Make sure ffmpeg is installed on your system")
-            print("2. Try updating yt-dlp: yt-dlp -U")
-            print("3. Check if the video is accessible in your browser")
+    if urls_to_process:
+        process_download_queue(urls_to_process, args.output, args.verbose)
     else:
-        print("No URL provided. Exiting.")
+        print("No URLs provided. Exiting.")
