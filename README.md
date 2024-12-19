@@ -4,9 +4,13 @@ A Python-based script to download the highest-quality YouTube videos, complete w
 
 ## Features
 
-- Downloads YouTube videos in the highest available resolution.
-- Ensures audio and video are merged into a single MP4 file.
-- Simple and user-friendly.
+- Downloads YouTube videos in the highest available resolution
+- Ensures audio and video are merged into a single MP4 file
+- Supports downloading multiple videos in a queue
+- Saves videos with upload date in the filename (YYYY_MM_DD format)
+- Command-line interface with multiple options
+- Interactive mode for entering multiple URLs
+- Simple and user-friendly
 
 ## Requirements
 
@@ -28,35 +32,86 @@ A Python-based script to download the highest-quality YouTube videos, complete w
    ```
 
 3. Install `ffmpeg`:
-   - **Linux**: Use your package manager, e.g., `sudo apt install ffmpeg`.
-   - **MacOS**: Install via Homebrew: `brew install ffmpeg`.
-   - **Windows**: Download and install from [FFmpeg.org](https://ffmpeg.org).
+   - **Linux**: Use your package manager, e.g., `sudo apt install ffmpeg`
+   - **MacOS**: Install via Homebrew: `brew install ffmpeg`
+   - **Windows**: Download and install from [FFmpeg.org](https://ffmpeg.org)
 
 ## Usage
 
-1. Run the script:
+### Command-line Interface
+
+The script supports various command-line arguments:
+
+```bash
+python main.py [-h] [-u URLS [URLS ...]] [-v] [-o OUTPUT]
+
+Optional arguments:
+  -h, --help            Show this help message and exit
+  -u, --urls URLS [URLS ...]
+                        YouTube video URLs to download
+  -v, --verbose         Enable verbose output
+  -o, --output OUTPUT   Output folder path (default: 'downloads')
+```
+
+### Examples
+
+1. Download a single video:
+   ```bash
+   python main.py -u https://youtube.com/watch?v=example
+   ```
+
+2. Download multiple videos:
+   ```bash
+   python main.py -u https://youtube.com/watch?v=example1 https://youtube.com/watch?v=example2
+   ```
+
+3. Specify output folder:
+   ```bash
+   python main.py -u https://youtube.com/watch?v=example -o my_videos
+   ```
+
+4. Enable verbose output:
+   ```bash
+   python main.py -u https://youtube.com/watch?v=example -v
+   ```
+
+### Interactive Mode
+
+1. Run the script without arguments:
    ```bash
    python main.py
    ```
 
-2. Enter the YouTube video URL when prompted.
-
-3. The video will be downloaded and saved in the `downloads` folder.
+2. Enter YouTube URLs one per line
+3. Press Enter twice when done
+4. Videos will be downloaded sequentially
 
 ## Output
 
-- Videos are saved in the `downloads` folder by default.
-- File format: `.mp4`
+- Videos are saved in the `downloads` folder by default (can be changed with `-o` option)
+- File format: `title_YYYY_MM_DD.mp4`
+- Example: `Never Gonna Give You Up_2009_10_25.mp4`
 
-## Example
+## Example Output
 
 ```plaintext
 YouTube Video Downloader
 ========================
-Enter the YouTube video URL: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-Downloading video...
-Downloaded: downloads/Never Gonna Give You Up.mp4
-Video successfully downloaded to: downloads/Never Gonna Give You Up.mp4
+Processing download queue: 2 videos
+
+Processing video 1/2
+Downloading video: https://youtube.com/watch?v=example1
+Successfully downloaded: downloads/Video Title 1_2024_01_15.mp4
+
+Processing video 2/2
+Downloading video: https://youtube.com/watch?v=example2
+Successfully downloaded: downloads/Video Title 2_2024_01_15.mp4
+
+Download Queue Summary
+=====================
+Total videos: 2
+Successfully downloaded: 2
+Failed downloads: 0
 ```
 
 ## Legal Disclaimer
