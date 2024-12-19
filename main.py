@@ -5,6 +5,7 @@ import sys
 def download_video(video_url, output_folder="downloads", verbose=False):
     """
     Downloads a YouTube video using yt-dlp and forces MP4 output.
+    Filename format: title_YYYY_MM_DD.mp4
 
     Args:
         video_url (str): The URL of the YouTube video to download.
@@ -21,7 +22,7 @@ def download_video(video_url, output_folder="downloads", verbose=False):
         # Force MP4 output
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'merge_output_format': 'mp4',  # Force merging into MP4
-        'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),
+        'outtmpl': os.path.join(output_folder, '%(title)s_%(upload_date>%Y_%m_%d)s.%(ext)s'),
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',  # Ensure final format is MP4
@@ -37,7 +38,13 @@ def download_video(video_url, output_folder="downloads", verbose=False):
             info = ydl.extract_info(video_url, download=True)
             if info:
                 video_title = info.get('title', 'Unknown')
-                video_file = os.path.join(output_folder, f"{video_title}.mp4")
+                upload_date = info.get('upload_date', '')
+                if upload_date:
+                    # Format: title_YYYY_MM_DD.mp4
+                    formatted_date = f"{upload_date[:4]}_{upload_date[4:6]}_{upload_date[6:8]}"
+                    video_file = os.path.join(output_folder, f"{video_title}_{formatted_date}.mp4")
+                else:
+                    video_file = os.path.join(output_folder, f"{video_title}.mp4")
                 print(f"Successfully downloaded: {video_file}")
                 return video_file
 
